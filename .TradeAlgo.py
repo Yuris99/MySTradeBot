@@ -1,0 +1,2 @@
+def checkstock():
+    return True
