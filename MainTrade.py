@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 import telegram
 
 from kiwoom import kiwoom
+import message
 
 with open('.mydata/key.json') as json_file:
     json_data = json.load(json_file)
@@ -24,7 +25,11 @@ def dbgout(message):
 
 def Main():
     app = QApplication(sys.argv)
-    kiwoom.Kiwoom()
+    stockbank = kiwoom.Kiwoom()
+    dbgout(f"키움계좌에 로그인되었습니다.\n이름 : {stockbank.user_name}\nID : {stockbank.user_id}\n보유 계좌 수 : {stockbank.account_count}\n계좌번호 : {stockbank.account_num[0]}\n예수금 : {format(int(stockbank.deposit), ',')}원\n출금가능금액 : {format(int(stockbank.ok_deposit), ',')}원")
+    dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {float(stockbank.total_profit_loss_rate)}")
+
+    
     """
     try:
         have_list = []
@@ -35,7 +40,7 @@ def Main():
             t_now = datetime.now()
             t_9 = t_now.replace(hour=9, minute=0, second=0, microsecond=0)
             t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
-            t_sell = t_now.replace(hour=15, minute=25, second=0, microsecond=0)
+            t_sell = t_now.replace(hour=15, minute=20, second=0, microsecond=0)
             t_exit = t_now.replace(hour=15, minute=30, second=0,microsecond=0)
             today = datetime.today().weekday()
             if today == 5 or today == 6:  # 토요일이나 일요일이면 자동 종료
@@ -44,7 +49,7 @@ def Main():
             if t_9 < t_now < t_start and soldout == False:
                 soldout = True
                 sell_all()
-            if t_start < t_now < t_sell :  # AM 09:05 ~ PM 03:25 : 매수
+            if t_start < t_now < t_sell :  # AM 09:05 ~ PM 03:20 : 매수
                 for sym in symbol_list:
                     if len(bought_list) < target_buy_count:
                         buy_etf(sym)
