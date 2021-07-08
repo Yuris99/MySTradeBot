@@ -17,7 +17,7 @@ chatid = json_data["telegram_chatid"]
 
 
 def dbgout(message):
-    """인자로 받은 문자열을 파이썬 셸과 슬랙으로 동시에 출력한다."""
+    """인자로 받은 문자열을 파이썬 셸과 텔레그램으로 동시에 출력한다."""
     print(datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
     strbuf = datetime.now().strftime('[%m/%d %H:%M:%S] ') + message
     telbot.sendMessage(chat_id=chatid, text=strbuf)
@@ -26,10 +26,18 @@ def dbgout(message):
 def Main():
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
-    dbgout(f"키움계좌에 로그인되었습니다.\n이름 : {stockbank.user_name}\nID : {stockbank.user_id}\n보유 계좌 수 : {stockbank.account_count}\n계좌번호 : {stockbank.account_num[0]}\n예수금 : {format(int(stockbank.deposit), ',')}원\n출금가능금액 : {format(int(stockbank.ok_deposit), ',')}원")
     dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {float(stockbank.total_profit_loss_rate)}")
 
-    
+
+    #TEST 
+    try:
+        dbgout("Debuging mode")
+
+    except Exception as ex:
+        dbgout('`main -> exception! ' + str(ex) + '`')
+
+
+
     """
     try:
         have_list = []
@@ -57,11 +65,11 @@ def Main():
                 if t_now.minute == 30 and 0 <= t_now.second <= 5: 
                     get_stock_balance('ALL')
                     time.sleep(5)
-            if t_sell < t_now < t_exit:  # PM 03:15 ~ PM 03:20 : 일괄 매도
+            if t_sell < t_now < t_exit:  # PM 03:15 ~ PM 03:20 : 정리
                 if sell_all() == True:
                     dbgout('`sell_all() returned True -> self-destructed!`')
                     sys.exit(0)
-            if t_exit < t_now:  # PM 03:20 ~ :프로그램 종료
+            if t_exit < t_now:  # PM 03:25 ~ :프로그램 종료
                 dbgout('`self-destructed!`')
                 sys.exit(0)
             time.sleep(3)
