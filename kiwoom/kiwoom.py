@@ -50,6 +50,8 @@ class Kiwoom(QAxWidget):
     def event_slots(self):
         self.OnEventConnect.connect(self.login_slot)
         self.OnReceiveTrData.connect(self.trdata_slot)
+        self.OnReceiveRealData.connect(self.realdata_slot)
+        self.OnReceiveRealCondition.connect(self.receive_real_condition)
 
     def login_slot(self, errCode):
         print(errors(errCode))
@@ -89,6 +91,9 @@ class Kiwoom(QAxWidget):
 
         self.detail_account_info_event_loop.exec_()
 
+    def getCommRealData(self, realType, fid):
+        return self.dynamicCall("GetCommRealData(QString, int)", realType, fid).strip()
+
     def start_real_find(self):
         """
         conditionNameList = self.dynamicCall("GetConditionNameList()")
@@ -127,7 +132,7 @@ class Kiwoom(QAxWidget):
 
             self.total_profit_loss_rate = self.dynamicCall("GetCommData(String, String, int, String", sTrCode, sRQName, 0, "총수익률(%%)")
             
-
+        """
             self.stockcnt = self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName)
             for i in range(rows):
                 code = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "종목번호")
@@ -166,15 +171,21 @@ class Kiwoom(QAxWidget):
                 self.detail_account_mystock(sPrevNext="2")
             else:
                 self.detail_account_info_event_loop.exit()
+
+        """
+
+    def realdata_slot(self, sTrCode, realType, realData):
+        self.stock_sise_dict[sTrCode] = {"realType": realType, "realData": realData}
+
             
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
         """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스"""
         try:
-            if str(event_type) == "I":
+            if str(event_type) == "I" and strConditionName == "Auto3dot5":
                 if TradeAlgo.checkstock(strCode):
-                    get_data = {{"code", strCode}, {"event_type", event_type}, {"condi_name", strConditionName, "condi_index", strConditionIndex}}
-
-                    self.find_stock.append(get_data)
+                    #self.find_stock.append(get_data)
+                    self.getCommRealData(strCode, 10)
+                    print(self.stock_sise_dict(strCode))
         except Exception as e:
             MainTrade.dbgout(e)
         finally:
