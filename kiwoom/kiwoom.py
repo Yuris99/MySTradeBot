@@ -174,6 +174,10 @@ class Kiwoom(QAxWidget):
 
         """
 
+        if sRQName == "실시간현재가조회":
+            code = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "종목코드")
+            code = code.strip()
+
     def realdata_slot(self, sTrCode, realType, realData):
         self.stock_sise_dict[sTrCode] = {"realType": realType, "realData": realData}
 
@@ -185,6 +189,7 @@ class Kiwoom(QAxWidget):
                 if TradeAlgo.checkstock(strCode):
                     #self.find_stock.append(get_data)
                     self.getCommRealData(strCode, 10)
+                    self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, )
                     print(self.stock_sise_dict(strCode))
         except Exception as e:
             MainTrade.dbgout(e)
