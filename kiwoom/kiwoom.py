@@ -4,6 +4,7 @@ from conf.errorCode import *
 import MainTrade
 import TradeAlgo
 import json
+from conf import kiwoomType
 
 with open('.mydata/key.json') as json_file:
     json_data = json.load(json_file)
@@ -16,6 +17,8 @@ class Kiwoom(QAxWidget):
 
         print("Kiwoom 클래스 호출")
 
+        self.realType = kiwoomType.RealType()
+
         ########## 변수모음
         self.account_stock_dict = {}
         self.find_stock = []
@@ -23,9 +26,11 @@ class Kiwoom(QAxWidget):
         ########## 이벤트루프 모음
         self.login_event_loop = None
         self.detail_account_info_event_loop = QEventLoop()
+        self.get_stock_info_event_loop = QEventLoop()
 
         ########## 스크린 번호 모음
         self.screen_my_info = "2000"
+        self.screen_my_stock_info = "1000"
         self.screen_real_search = "3000"
         self.screen_trade_stock = 4000
 
@@ -174,12 +179,30 @@ class Kiwoom(QAxWidget):
 
         """
 
-        if sRQName == "실시간현재가조회":
+        if sRQName == "주식체결정보조회":
             code = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "종목코드")
             code = code.strip()
 
+            self.get_stock_info_event_loop.exit()
+
+
     def realdata_slot(self, sTrCode, realType, realData):
         self.stock_sise_dict[sTrCode] = {"realType": realType, "realData": realData}
+
+        if realType == "주식체결":
+            t = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['체결시간'])
+            currprice = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['현재가'])
+            currprice = abs(int(currprice))
+
+            startprice = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['시가'])
+            startprice = abs(int(startprice))
+
+            if sTrCode not in self.my_stock_dict:
+                self.my_stock_dict.update({sTrCode:{}})
+            
+            self.my_stock_dict[sTrCode].update({"체결시간": t})
+            self.my_stock_dict[sTrCode].update({"현재가": currprice})
+            self.my_stock_dict[sTrCode].update({"시가": startprice})
 
             
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
@@ -188,11 +211,22 @@ class Kiwoom(QAxWidget):
             if str(event_type) == "I" and strConditionName == "Auto3dot5":
                 if TradeAlgo.checkstock(strCode):
                     #self.find_stock.append(get_data)
-                    self.getCommRealData(strCode, 10)
-                    self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, """실시간코드""", "1")
+                    #self.getCommRealData(strCode, 10)
+                    #self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, self.realType.REALTYPE[], "1")
+
+                    self.getPrice(strCode)
+
                     print(self.stock_sise_dict(strCode))
         except Exception as e:
             MainTrade.dbgout(e)
         finally:
             self.real_condition_search_result = []
+    
+    def getPrice(self, strCode):
+        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
+
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식체결정보조회", "opt10003", 0, self.screen_my_stock_info)
+
+        self.get_stock_info_event_loop.exec_()
+
         
