@@ -189,7 +189,7 @@ class Kiwoom(QAxWidget):
                 if TradeAlgo.checkstock(strCode):
                     #self.find_stock.append(get_data)
                     self.getCommRealData(strCode, 10)
-                    self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, )
+                    self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, """실시간코드""", "1")
                     print(self.stock_sise_dict(strCode))
         except Exception as e:
             MainTrade.dbgout(e)
