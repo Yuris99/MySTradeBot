@@ -26,12 +26,16 @@ def dbgout(message):
 def Main():
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
-    dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {float(stockbank.total_profit_loss_rate)}")
+    dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {stockbank.total_profit_loss_rate_result}")
+    print("test")
+    stockbank.getPrice("320000")
 
 
     #TEST 
     try:
         dbgout("Debuging mode")
+        have_list = []
+        
 
     except Exception as ex:
         dbgout('`main -> exception! ' + str(ex) + '`')
