@@ -28,13 +28,18 @@ def Main():
     stockbank = kiwoom.Kiwoom()
     dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {stockbank.total_profit_loss_rate_result}")
     print("test")
-    stockbank.getPrice("320000")
-
 
     #TEST 
     try:
         dbgout("Debuging mode")
-        have_list = []
+        vr_bank = []
+        use_account = []
+        target_buy_count = 5
+        Max_bought_money = 2000000
+        for i in range(target_buy_count):
+            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit)))
+            use_account.append(False)
+        print(vr_bank)
         
 
     except Exception as ex:
@@ -46,6 +51,7 @@ def Main():
     try:
         have_list = []
         target_buy_count = 2
+        Max_bought_money = 1000000
         dbgout("test")
 
         while True:
@@ -80,6 +86,8 @@ def Main():
     except Exception as ex:
         dbgout('`main -> exception! ' + str(ex) + '`')
     """
+    
+    app.exec_()
 
 
 

@@ -97,25 +97,25 @@ class Kiwoom(QAxWidget):
 
         self.detail_account_info_event_loop.exec_()
 
-    def getCommRealData(self, realType, fid):
-        return self.dynamicCall("GetCommRealData(QString, int)", realType, fid).strip()
 
     def start_real_find(self):
-        """
+        condition_list = {'index': [], 'name': []}
+        condition_name = ""
+        condition_index = ""
+        condi_load = self.dynamicCall("GetConditionLoad()")
         conditionNameList = self.dynamicCall("GetConditionNameList()")
         conditionNameListArray = conditionNameList.rstrip(';').split(';')
-        for i in range(0, len(conditionNameListArray)): # 조건검색식 개수만큼 반복
-            
+        for data in conditionNameListArray: # 조건검색식 개수만큼 반복
+            a = data.split("^")
+            condition_list['index'].append(str(a[0]))
+            condition_list['name'].append(str(a[1]))
+            if str(a[1]) == json_data["condi_search_name"]:
+                condition_name = str(a[1])
+                condition_index = str(a[0])
 
-        conditionArray = self.cbCdtNm.currentText().strip().split('^')  # 선택한 조건검색명을 가져와서 ^ 기호를 기준 분리
-        index = self.cbCdtNm.findText(json_data["condi_search"])  # 조건검색식 명으로 순번을 찾음
-        if index >= 0:  # 해당 순번이 있다면 (해당 조건검색식 명이 있다면)
-            self.cbCdtNm.setCurrentIndex(index) # 해당 순번을 선택 (해당 조검검색식을 선택)
-            
-        """
-        condition_name = json_data["condi_search_name"]
-        condition_index = json_data["condi_search_index"]
-        self.dynamicCall("SendCondition(QString, QString, int, int)", "0156", condition_name, condition_index, 1)
+        if condition_index != "":
+            self.dynamicCall("SendCondition(QString, QString, int, int)", "0156", condition_name, condition_index, 1)
+            print("조건 검색 성공")
 
 
 
@@ -204,8 +204,7 @@ class Kiwoom(QAxWidget):
             self.get_stock_info_event_loop.exit()
 
 
-    def realdata_slot(self, sTrCode, realType, realData):
-        self.stock_sise_dict[sTrCode] = {"realType": realType, "realData": realData}
+    def realdata_slot(self, sTrCode, realType, realData): 
 
         if realType == "주식체결":
             t = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['체결시간'])
@@ -225,6 +224,7 @@ class Kiwoom(QAxWidget):
             
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
         """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스"""
+        print(strCode + "조건검색 확인")
         try:
             if str(event_type) == "I" and strConditionName == "Auto3dot5":
                 if TradeAlgo.checkstock(strCode):
@@ -234,6 +234,7 @@ class Kiwoom(QAxWidget):
 
                     self.getPrice(strCode)
                     if(TradeAlgo.FindBuy(self.price_dict[strCode])):
+                        MainTrade.dbgout(strCode + "매수신호 발생") 
                         """매수"""
 
                     print(self.stock_sise_dict(strCode))
