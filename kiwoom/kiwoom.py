@@ -33,7 +33,7 @@ class Kiwoom(QAxWidget):
         self.screen_my_info = "2000"
         self.screen_my_stock_info = "1000"
         self.screen_real_search = "3000"
-        self.screen_trade_stock = 4000
+        self.screen_trade_stock = "4000"
 
 
 
@@ -56,8 +56,10 @@ class Kiwoom(QAxWidget):
     def event_slots(self):
         self.OnEventConnect.connect(self.login_slot)
         self.OnReceiveTrData.connect(self.trdata_slot)
+
         self.OnReceiveRealData.connect(self.realdata_slot)
         self.OnReceiveRealCondition.connect(self.receive_real_condition)
+        self.OnReceiveChejanData.connect(self.chejan_slot)
 
     def login_slot(self, errCode):
         print(errors(errCode))
@@ -192,6 +194,8 @@ class Kiwoom(QAxWidget):
             startprice = abs(int(startprice))
             tradeValue = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "거래량")
             tradeValue = abs(int(tradeValue))
+            possibleTrade = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "거래량")
+            possibleTrade = abs(int(possibleTrade))
 
             if sTrCode not in self.price_dict:
                 self.price_dict.update({sTrCode:{}})
@@ -221,6 +225,16 @@ class Kiwoom(QAxWidget):
             self.my_stock_dict[sTrCode].update({"현재가": currprice})
             self.my_stock_dict[sTrCode].update({"시가": startprice})
 
+    def chejan_slot(self, sGubun, nItemCnt, sFidList):
+        if int(sGubun) == 0:
+            print("주문체결")
+            #주문체결
+        elif int(sGubun) == 1:
+            print("잔고")
+            #잔고
+
+
+
             
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
         """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스"""
@@ -235,7 +249,9 @@ class Kiwoom(QAxWidget):
                     self.getPrice(strCode)
                     if(TradeAlgo.FindBuy(self.price_dict[strCode])):
                         MainTrade.dbgout(strCode + "매수신호 발생") 
-                        """매수"""
+                        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", 
+                                         "신규매수", self.screen_trade_stock, self.account_num, 1, )
+                        
 
                     print(self.stock_sise_dict(strCode))
         except Exception as e:

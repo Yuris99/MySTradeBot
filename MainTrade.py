@@ -37,7 +37,7 @@ def Main():
         target_buy_count = 5
         Max_bought_money = 2000000
         for i in range(target_buy_count):
-            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit)))
+            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit/target_buy_count)))
             use_account.append(False)
         print(vr_bank)
         
