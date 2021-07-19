@@ -116,8 +116,11 @@ class Kiwoom(QAxWidget):
                 condition_index = str(a[0])
 
         if condition_index != "":
-            self.dynamicCall("SendCondition(QString, QString, int, int)", "0156", condition_name, condition_index, 1)
-            print("조건 검색 성공")
+            send = self.dynamicCall("SendCondition(QString, QString, int, int)", "0156", condition_name, condition_index, 1)
+            if send == 0:
+                print("조건 검색 성공")
+            else:
+                print("조건신호 실패")
 
 
 
@@ -249,8 +252,19 @@ class Kiwoom(QAxWidget):
                     self.getPrice(strCode)
                     if(TradeAlgo.FindBuy(self.price_dict[strCode])):
                         MainTrade.dbgout(strCode + "매수신호 발생") 
-                        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", 
-                                         "신규매수", self.screen_trade_stock, self.account_num, 1, )
+                        Account_num = MainTrade.SetAccount()
+                        if(Account_num == -1):
+                            MainTrade.dbgout("남은계좌 없음. 매수 실패")
+                            return
+                        buyStock_cnt = (MainTrade.vr_bank[Account_num] - 50000) / self.price_dict[strCode]["현재가"]
+                        order_status = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", 
+                                        "시장가매수", self.screen_trade_stock, self.account_num, 1, strCode, buyStock_cnt, 0, self.realType.SENDTYPE['거래구분']['시장가'], "")
+                        
+                        if order_status == 0:
+                            print("매도주문 전달 성공")
+                        else:
+                            print("매도주문 전달 실패")
+                        
                         
 
                     print(self.stock_sise_dict(strCode))

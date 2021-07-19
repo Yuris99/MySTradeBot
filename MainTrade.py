@@ -23,6 +23,20 @@ def dbgout(message):
     telbot.sendMessage(chat_id=chatid, text=strbuf)
 
 
+vr_bank = []
+use_account = []
+
+def SetAccount():
+    """
+    for i, data in use_account:
+        if(data == False):
+            data = True
+            return i
+    return -1
+    """
+    return -1
+
+
 def Main():
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
@@ -37,7 +51,7 @@ def Main():
         target_buy_count = 5
         Max_bought_money = 2000000
         for i in range(target_buy_count):
-            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit/target_buy_count)))
+            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit)/target_buy_count))
             use_account.append(False)
         print(vr_bank)
         
