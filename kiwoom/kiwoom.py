@@ -226,6 +226,7 @@ class Kiwoom(QAxWidget):
             self.price_dict[code].update({"거래량": tradeValue})
 
             #print(self.price_dict[code])
+            print("종목정보 호출 성공")
             self.get_stock_info_event_loop.exit()
 
 
@@ -314,6 +315,7 @@ class Kiwoom(QAxWidget):
     def getPrice(self, strCode):
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
         self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)
+        print("종목 불러오기")
         self.get_stock_info_event_loop.exec_()
 
     def test(self, strCode):
