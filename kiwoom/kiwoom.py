@@ -48,7 +48,7 @@ class Kiwoom(QAxWidget):
         self.detail_account_info()
         self.detail_account_mystock()
         self.start_real_find()
-        #self.test("042420")
+        self.test("042420")
 
 
 
@@ -215,8 +215,6 @@ class Kiwoom(QAxWidget):
             startprice = abs(int(startprice))
             tradeValue = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "거래량")
             tradeValue = abs(int(tradeValue))
-            possibleTrade = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "거래량")
-            possibleTrade = abs(int(possibleTrade))
 
             if code not in self.price_dict:
                 self.price_dict.update({code:{}})
@@ -311,12 +309,6 @@ class Kiwoom(QAxWidget):
             MainTrade.dbgout(e)
         finally:
             self.real_condition_search_result = []
-    
-    def getPrice(self, strCode):
-        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)
-        print("종목 불러오기")
-        self.get_stock_info_event_loop.exec_()
 
     def test(self, strCode):
         self.getPrice(strCode)
@@ -335,5 +327,11 @@ class Kiwoom(QAxWidget):
                 print("매도주문 전달 성공")
             else:
                 print("매도주문 전달 실패")
+    
+    def getPrice(self, strCode):
+        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)
+        print("종목 불러오기")
+        self.get_stock_info_event_loop.exec_()
 
     
