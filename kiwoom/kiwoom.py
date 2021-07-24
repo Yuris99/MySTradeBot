@@ -29,7 +29,7 @@ class Kiwoom(QAxWidget):
         ########## 이벤트루프 모음
         self.login_event_loop = None
         self.detail_account_info_event_loop = QEventLoop()
-        self.get_stock_info_event_loop = QEventLoop()
+        self.get_stock_info_event_loop = None
 
         ########## 스크린 번호 모음
         self.screen_my_info = "2000"
@@ -255,29 +255,30 @@ class Kiwoom(QAxWidget):
             order_gubun = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문구분'])
             order_status = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문상태'])
             sCode = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['종목코드'])[1:]
+            sName = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['종목명'])
             order_gubun = order_gubun.strip().lstrip('+').lstrip('-')
-            if order_gubun == "매수" and order_status == "접수":
-                order_num = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문번호'])
-                order_quan = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문수량'])
-                order_quan = int(order_quan)
-                order_price = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문가격'])
-                order_price = int(order_quan)
-
-                chegual_price = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['체결가'])
-                if(chegual_price == ''):
+            order_num = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문번호'])
+            order_quan = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문수량'])
+            order_quan = int(order_quan)
+            order_price = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['주문가격'])
+            order_price = int(order_quan)
+            chegual_price = self.dynamicCall("GetChejanData(int)", self.realType.REALTYPE['주문체결']['체결가'])
+            if(chegual_price == ''):
                     chegual_price = 0
-                else:
+            else:
                     chegual_price = int(chegual_price)
+            
+            
+            if order_gubun == "매수" and order_status == "접수":
+                MainTrade.dbgout("매수 체결이 완료되었습니다 : " + sCode + "\n 종목명 : " + sName + "\n주문 수량 : " + str(order_quan))
 
-                MainTrade.dbgout("매수 접수가 완료되었습니다 : " + sCode)
+            if order_gubun == "매수" and order_status == "체결":
+                MainTrade.dbgout("매수 체결이 완료되었습니다 : " + sCode + "\n 종목명 : " + sName + "\n주문 수량 : " + str(order_quan) + "\n체결가 : " + str(chegual_price))
 
-        if order_gubun == "매수" and order_status == "체결":
-                MainTrade.dbgout("매수 체결이 완료되었습니다 : " + sCode)
-
-        if order_gubun == "매도" and order_status == "접수":
+            if order_gubun == "매도" and order_status == "접수":
                 MainTrade.dbgout("매도 접수가 완료되었습니다 : " + sCode)
 
-        if order_gubun == "매도" and order_status == "체결":
+            if order_gubun == "매도" and order_status == "체결":
                 MainTrade.dbgout("매도 체결이 완료되었습니다 : " + sCode)
 
 
@@ -353,7 +354,7 @@ class Kiwoom(QAxWidget):
     def getPrice(self, strCode):    
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
         checkfind = self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)
-        
+        self.get_stock_info_event_loop = QEventLoop()
         print(errors(checkfind))
         if checkfind == 0:
             print(strCode + "종목 불러오기")

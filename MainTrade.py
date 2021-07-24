@@ -27,31 +27,30 @@ vr_bank = []
 use_account = []
 
 def SetAccount():
-    """
+    return -1
     for i, data in use_account:
         if(data == False):
             data = True
             return i
-    return -1
-    """
     return -1
 
 
 def Main():
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
-    dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n충수익률 : {stockbank.total_profit_loss_rate_result}")
+    dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n총수익률 : {stockbank.total_profit_loss_rate_result}")
     print("test")
 
     #TEST 
     try:
         dbgout("Debuging mode")
-        vr_bank = []
+        vr_bank = {}
         use_account = []
         target_buy_count = 5
         Max_bought_money = 2000000
         for i in range(target_buy_count):
-            vr_bank.append(min(Max_bought_money, int(stockbank.ok_deposit)/target_buy_count))
+            vr_bank.update({i:{}})
+            vr_bank[i].update({"출금가능금액":min(Max_bought_money, int(stockbank.ok_deposit)/target_buy_count)})
             use_account.append(False)
         print(vr_bank)
         
