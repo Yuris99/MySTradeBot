@@ -34,7 +34,7 @@ class Kiwoom(QAxWidget):
 
         ########## 스크린 번호 모음
         self.screen_my_info = "2000"
-        self.screen_my_stock_info = "1000"
+        self.screen_my_stock_info = "5000"
         self.screen_real_search = "3000"
         self.screen_real_sise = "3001"
         self.screen_trade_stock = "4000"
@@ -148,6 +148,7 @@ class Kiwoom(QAxWidget):
 
     def trdata_slot(self, sScrNo, sRQName, sTrCode, sRecordName, sPrevNext):
         """스크린번호, 요청이름, tr코드, 사용안함, 다음페이지"""
+        print("receive!")
 
         if sRQName == "예수금상세현황요청":
             self.deposit = self.dynamicCall("GetCommData(String, String, int, String", sTrCode, sRQName, 0, "예수금")
@@ -237,6 +238,8 @@ class Kiwoom(QAxWidget):
         if realType == "주식체결":
             currprice = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['현재가'])
             currprice = abs(int(currprice))
+            if(self.my_stock_dict[sTrCode]["상태"] == 0):
+                
             if(currprice >= self.my_stock_dict[sTrCode]["목표가"]):
                 MainTrade.dbgout("[" + sTrCode + "] " + self.my_stock_dict[sTrCode]['종목명'] + "  매도신호 발생") 
                 sellStock_cnt = self.jango_dict[sTrCode]["주문가능수량"]
@@ -364,15 +367,19 @@ class Kiwoom(QAxWidget):
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
         """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스"""
         try:
-            if str(event_type) == "I" and strConditionName == "Auto3dot5":
+            if str(event_type) == "I" and strConditionName == json_data["condi_search_name"]:
                 print(strCode + "조건검색 확인")
                 if TradeAlgo.checkstock(strCode) or True:
                     #self.find_stock.append(get_data)
                     #self.getCommRealData(strCode, 10)
                     #self.dynamicCall("SetRealReg(QString, QString, QString, QString", self.screen_real_search, strCode, self.realType.REALTYPE[], "1")
                     print("조건 확인 완료")
+                    
+                    self.my_stock_dict.update({strCode:{}})
+                    self.my_stock_dict[strCode].update({"상태": 0})
 
-                    self.getPrice(str(strCode).strip())
+                    self.dynamicCall("SetRealReg(QString, QString, QString, QString)", self.screen_real_sise, strCode, '20', '1')
+
                     print("종목 정보 불러오기 성공" + str(self.price_dict[strCode]))
                     if TradeAlgo.FindBuy(self.price_dict[strCode]):
                         MainTrade.dbgout("[" + strCode + "] " + self.price_dict[strCode]['종목명'] + "  매수신호 발생") 
@@ -421,14 +428,14 @@ class Kiwoom(QAxWidget):
     """
     
     def getPrice(self, strCode):    
-        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", strCode)
+        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", str(strCode))
         checkfind = self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)
         self.get_stock_info_event_loop = QEventLoop()
         print(errors(checkfind))
         if checkfind == 0:
             print(strCode + "종목 불러오기")
         else:
-            print("에러발생!! " + checkfind)
+            print("에러발생!! " + str(checkfind))
         self.get_stock_info_event_loop.exec_()
 
     

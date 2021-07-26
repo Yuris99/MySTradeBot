@@ -27,6 +27,9 @@ vr_bank = []
 use_account = []
 
 def SetAccount():
+    if(use_account[0] == False):
+        use_account[0] = True
+        return 0
     return -1
     for i, data in use_account:
         if(data == False):
