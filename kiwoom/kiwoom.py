@@ -50,7 +50,7 @@ class Kiwoom(QAxWidget):
         self.detail_account_info()
         self.detail_account_mystock()
         self.start_real_find()
-        #self.test("042420")
+        self.test("042420")
         #self.test("016450")
 
 
