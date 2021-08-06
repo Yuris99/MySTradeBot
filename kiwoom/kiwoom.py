@@ -238,8 +238,7 @@ class Kiwoom(QAxWidget):
         if realType == "주식체결":
             currprice = self.dynamicCall("GetCommRealData(QString, int)", sTrCode, self.realType.REALTYPE[realType]['현재가'])
             currprice = abs(int(currprice))
-            if(self.my_stock_dict[sTrCode]["상태"] == 0):
-                
+            
             if(currprice >= self.my_stock_dict[sTrCode]["목표가"]):
                 MainTrade.dbgout("[" + sTrCode + "] " + self.my_stock_dict[sTrCode]['종목명'] + "  매도신호 발생") 
                 sellStock_cnt = self.jango_dict[sTrCode]["주문가능수량"]
