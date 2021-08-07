@@ -1,13 +1,18 @@
 import sys
 import time
+import logging
 from datetime import datetime
 import json
 
 from PyQt5.QtWidgets import *
 import telegram
 
-from kiwoom import kiwoom
-import message
+import Trader
+
+
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(message)s - %(filename)s:%(lineno)d',
+    level=logging.DEBUG)
 
 with open('.mydata/key.json') as json_file:
     json_data = json.load(json_file)
@@ -15,12 +20,20 @@ with open('.mydata/key.json') as json_file:
 telbot = telegram.Bot(token=json_data["telegram_Token"])
 chatid = json_data["telegram_chatid"]
 
+logger = telbot.logger
+logger.setLevel(logging.INFO)
+
+#formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
+
+#stream_handler = logging.StreamHandler()
+#stream_handler.setFormatter(formatter)
+
 
 def dbgout(message):
     """인자로 받은 문자열을 파이썬 셸과 텔레그램으로 동시에 출력한다."""
-    print(datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
-    strbuf = datetime.now().strftime('[%m/%d %H:%M:%S] ') + message
+    strbuf = datetime.now().strftime("[%m/%d %H:%M:%S.%f] ") + message
     telbot.sendMessage(chat_id=chatid, text=strbuf)
+    logging.info(message)
 
 
 vr_bank = []
@@ -39,6 +52,15 @@ def SetAccount():
 
 
 def Main():
+    logging.debug("function: main")
+    app = QApplication(sys.argv)
+
+    trader = Trader.Trader()
+    trader.run()
+    app.exec()
+
+    """
+    #python/kiwoom/kiwoom.py
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
     dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n총수익률 : {stockbank.total_profit_loss_rate_result}")
@@ -60,6 +82,7 @@ def Main():
 
     except Exception as ex:
         dbgout('`main -> exception! ' + str(ex) + '`')
+    """
 
 
 
@@ -103,7 +126,6 @@ def Main():
         dbgout('`main -> exception! ' + str(ex) + '`')
     """
     
-    app.exec_()
 
 
 
