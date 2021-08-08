@@ -1,6 +1,7 @@
 from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
 from conf.errorCode import *
+import logging
 import MainTrade
 import TradeAlgo
 import json
@@ -10,6 +11,9 @@ from conf import kiwoomType
 with open('.mydata/key.json') as json_file:
     json_data = json.load(json_file)
 
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(message)s - %(filename)s:%(lineno)d',
+    level=logging.DEBUG)
 
 class Kiwoom(QAxWidget):
     def __init__(self):
@@ -21,6 +25,7 @@ class Kiwoom(QAxWidget):
         self.realType = kiwoomType.RealType()
 
         ########## 변수모음
+        self.notify_fn = {}
         self.account_stock_dict = {}
         self.find_stock = []
         self.price_dict = {}
@@ -108,6 +113,7 @@ class Kiwoom(QAxWidget):
 
 
     def start_real_find(self):
+        self.notify_fn["_on_receive_real_condition"] = self.search_condi
         isLoad = self.dynamicCall("GetConditionLoad()")
         if not isLoad:
             print("조건 불러오기 실패")
@@ -364,7 +370,25 @@ class Kiwoom(QAxWidget):
 
             
     def receive_real_condition(self, strCode, event_type, strConditionName, strConditionIndex):  
-        """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스"""
+        
+        try:
+            logging.debug("function: receive_real_condition")
+            movementData = [
+                ("code", strCode),
+                ("event_type", event_type),
+                ("condi_name", strConditionName),
+                ("condi_index", strConditionIndex)
+            ]
+            movementData = dict(movementData)
+            movementData["kw_event"] = "OnReceiveRealCondition"
+            if '_on_receive_real_condition' in self.notify_fn:
+                self.notify_fn['_on_receive_real_condition'](movementData)
+        
+        except Exception as e:
+            logging.error(e)
+        finally:
+            self.real_condition_search_result = []
+        """종목코드, 이벤트종류(I:편입, D:이탈), 조건식 이름, 조건명 인덱스
         try:
             if str(event_type) == "I" and strConditionName == json_data["condi_search_name"]:
                 print(strCode + "조건검색 확인")
@@ -403,7 +427,7 @@ class Kiwoom(QAxWidget):
             MainTrade.dbgout(e)
         finally:
             self.real_condition_search_result = []
-    
+    """
     """
     def test(self, strCode):
         TradeAlgo.checkstock(strCode)
@@ -426,6 +450,41 @@ class Kiwoom(QAxWidget):
                 print("매도주문 전달 실패")
     """
     
+    def search_condi(self, event_data):
+        try:
+            logging.debug("function: search_condi")
+            if event_data["event_type"] == "I":
+                logging.debug("search_condi: check Insert")
+                strCode = event_data["code"]
+                if TradeAlgo.checkstock(strCode) or True: #디버깅
+                    logging.debug("search_condi: check condition")# 입력데이터
+
+                    self.getPrice(strCode)
+
+                    if TradeAlgo.FindBuy(self.price_dict[strCode]):
+                        MainTrade.dbgout("[" + strCode + "] " + self.price_dict[strCode]['종목명'] + "  매수신호 발생") 
+                        logging.debug("check All Condition : " + strCode)
+                        Account_num = MainTrade.SetAccount()
+                        if(Account_num == -1):
+                            MainTrade.dbgout("남은계좌 없음. 매수 실패")
+                            logging.error("No more Account List: Fail to Buy")
+                            return
+                        buyStock_cnt = (MainTrade.vr_bank[Account_num]) / self.price_dict[strCode]["현재가"]
+                        order_status = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", 
+                                        "시장가매수", self.screen_trade_stock, self.account_num, 1, strCode, buyStock_cnt, 0, self.realType.SENDTYPE['거래구분']['시장가'], "")
+                        
+                        if order_status == 0:
+                            logging.debug("Sucessful Call BuyFunction")
+                        else:
+                            logging.error("Fail to Call BuyFunction")
+
+                            
+                            
+        except Exception as e:
+            logging.error(e)
+        finally:
+            self.real_condition_search_result = []
+
     def getPrice(self, strCode):    
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", str(strCode))
         checkfind = self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식기본정보조회", "opt10001", 0, self.screen_my_stock_info)

@@ -7,7 +7,8 @@ import json
 from PyQt5.QtWidgets import *
 import telegram
 
-import Trader
+#import Trader
+from kiwoom import kiwoom
 
 
 logging.basicConfig(
@@ -36,14 +37,10 @@ def dbgout(message):
     logging.info(message)
 
 
-vr_bank = []
+vr_bank = {}
 use_account = []
 
 def SetAccount():
-    if(use_account[0] == False):
-        use_account[0] = True
-        return 0
-    return -1
     for i, data in use_account:
         if(data == False):
             data = True
@@ -53,36 +50,34 @@ def SetAccount():
 
 def Main():
     logging.debug("function: main")
+    """
     app = QApplication(sys.argv)
 
     trader = Trader.Trader()
-    trader.run()
-    app.exec()
+    #trader.run()
 
+    app.exec()
     """
     #python/kiwoom/kiwoom.py
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
+
+    target_buy_count = 1
+    Max_bought_money = 1000000
+    for i in range(target_buy_count):
+        vr_bank.update({i:{}})
+        vr_bank[i].update({"출금가능금액":min(Max_bought_money, int(stockbank.ok_deposit)/target_buy_count)})
+        use_account.append(False)
+    print(vr_bank)
     dbgout(f"계좌 현황\n총매입금액 : {format(int(stockbank.total_buy_money), ',')}원\n총수익률 : {stockbank.total_profit_loss_rate_result}")
-    print("test")
 
     #TEST 
     try:
         dbgout("Debuging mode")
-        vr_bank = {}
-        use_account = []
-        target_buy_count = 5
-        Max_bought_money = 2000000
-        for i in range(target_buy_count):
-            vr_bank.update({i:{}})
-            vr_bank[i].update({"출금가능금액":min(Max_bought_money, int(stockbank.ok_deposit)/target_buy_count)})
-            use_account.append(False)
-        print(vr_bank)
         
 
     except Exception as ex:
         dbgout('`main -> exception! ' + str(ex) + '`')
-    """
 
 
 
