@@ -22,7 +22,7 @@ telbot = telegram.Bot(token=json_data["telegram_Token"])
 chatid = json_data["telegram_chatid"]
 
 logger = telbot.logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 #formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
 
@@ -34,7 +34,7 @@ def dbgout(message):
     """인자로 받은 문자열을 파이썬 셸과 텔레그램으로 동시에 출력한다."""
     strbuf = datetime.now().strftime("[%m/%d %H:%M:%S.%f] ") + message
     telbot.sendMessage(chat_id=chatid, text=strbuf)
-    logging.info(message)
+    #logger.info(message)
 
 
 vr_bank = {}
@@ -58,10 +58,11 @@ def Main():
 
     app.exec()
     """
+    """
     #python/kiwoom/kiwoom.py
     app = QApplication(sys.argv)
     stockbank = kiwoom.Kiwoom()
-
+    
     target_buy_count = 1
     Max_bought_money = 1000000
     for i in range(target_buy_count):
@@ -79,6 +80,8 @@ def Main():
     except Exception as ex:
         dbgout('`main -> exception! ' + str(ex) + '`')
 
+    app.exec_()
+    """
 
 
     """
