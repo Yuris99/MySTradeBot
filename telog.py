@@ -5,7 +5,6 @@ from datetime import datetime
 
 from mydata import keyManager
 
-today_date = datetime.today().strftime('%Y-%m-%d %H_%M_%S')
 
 """
 logging.basicConfig(
