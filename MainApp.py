@@ -29,13 +29,19 @@ class MainApp:
         self.max_bought_money = keyManager.getJsonData("max_bought_money")
         for i in range(self.target_buy_count):
             self.vr_bank.append({"사용여부" : False, 
-                                "출금가능금액" : min(self.max_bought_money, int(self.kw.pos_deposit)/self.target_buy_count)})
-        self.logger.debug(self.vr_bank)
+                                "출금가능금액" : min(self.max_bought_money, int(self.kw.pos_deposit)/self.target_buy_count),
+                                "사용종목" : ""})
+        self.logger.debug("vr_bank = " + self.vr_bank)
+        # add callback function
+        self.kw.reg_callback("OnReceiveRealCondition", self.kw.screen_real_search, self.search_condi)
+        self.kw.reg_callback("OnReceiveTrData", "현재가요청", self.check_start_trade)
+        self.kw.reg_callback("OnSellStock", "매도완료", self.reset_vr_bank)
 
-    def set_vrbank(self):
+    def set_vrbank(self, code):
         for i in range(self.target_buy_count):
             if self.vr_bank[i]['사용여부'] is False:
                 self.vr_bank[i]['사용여부'] = True
+                self.vr_bank[i]['사용종목'] = code
                 return i
         return -1
 
@@ -50,10 +56,6 @@ class MainApp:
         #self.logger.info("단타 자동매매를 시작합니다.")
 
         #start timer?
-
-        # add callback function
-        self.kw.reg_callback("OnReceiveRealCondition", self.kw.screen_real_search, self.search_condi)
-        self.kw.reg_callback("OnReceiveTrData", "현재가요청", self.check_start_trade)
 
         #condi_info = self.kw.get_condition_load()
         self.kw.get_condition_load() #Call realCondition
@@ -82,22 +84,38 @@ class MainApp:
 
     def check_start_trade(self, event_data):
         if TradeAlgo.FindBuy(event_data):
-            self.logger.info("매수 종목 발생 : " + event_data['종목코드'])
+            self.logger.info("\n매수 종목 발생 : " + event_data['종목코드'])
             
-            vr_cnt = self.set_vrbank()
+            vr_cnt = self.set_vrbank(event_data['종목코드'])
             if vr_cnt == -1:
-                self.logger.info("모든 계좌가 사용중입니다")
-                self.logger.info("매수에 실패하였습니다")
+                self.logger.info("\n모든 계좌가 사용중입니다")
+                self.logger.info("\n매수에 실패하였습니다")
                 return
-            buy_stock_cnt = (self.vr_bank[vr_cnt]['출금가능금액'] / self.stock_info['종목정보']["현재가"]) - 1
+            buy_stock_cnt = (self.vr_bank[vr_cnt]['출금가능금액'] / event_data["현재가"]) - 1
+            order_status = self.kw.buy_marketPrice(event_data['종목코드'], buy_stock_cnt)
+            self.logger.info("매수를 시도합니다"
+                            +"\n종목번호 : " + event_data['종목코드'])
+                            
+            
+            if order_status == 0:
+                self.logger.debug("Sucessful Call BuyFunction")
+            else:
+                self.logger.error("Fail to Call BuyFunction")
+
+    def reset_vr_bank(self, code):
+
+        for i in range(self.target_buy_count):
+            if self.vr_bank[i]['사용종목'] == code:
+                self.vr_bank[i]['사용여부'] = False
+                self.logger.debug("Reset vr_bank " + str(i))
+                return 
+        self.logger.error("분할계좌를 초기화하지 못했습니다.")
 
 
 
 
 
 
-
-    
 
 
 if __name__=='__main__':

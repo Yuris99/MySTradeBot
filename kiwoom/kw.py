@@ -4,6 +4,7 @@ from singleton_decorator import singleton
 
 from kiwoom.tr import TrManager
 from kiwoom.condition import ConditionManager
+from kiwoom.chejan import Chejan
 from mydata import keyManager
 from conf.errorCode import *
 from telog import Telog
@@ -16,19 +17,8 @@ class Kiwoom(QAxWidget):
         self.logger = Telog().logger
         self.logger.debug("Class: Kiwoom")
 
-        self.tr = TrManager(self)
-        self.condi = ConditionManager(self)
-
-        #eventLoop
-        self.event_loop = QEventLoop()
-        self.tr_event_loop = QEventLoop()
-
-        #screenNo
-        self.screen_info = "1000"
-        self.screen_real_search = "3000"
-        self.screen_trade = "4000"
-
         #variable
+        self.real_list = []
         self.event_callback_fn = {
             "OnEventConnect": {},
             "OnReceiveTrData": {},
@@ -39,9 +29,27 @@ class Kiwoom(QAxWidget):
             "OnReceiveChejanData": {},
             "OnReceiveMsg": {},
             #custom
-            
-
+            "OnSellStock": {}
         }
+        self.stock_info = {}
+
+        #getClass
+        self.transport = TrManager(self)
+        self.condi = ConditionManager(self)
+        self.chejan = Chejan(self)
+
+        #eventLoop
+        self.event_loop = QEventLoop()
+        self.transportansport_event_loop = QEventLoop()
+
+        #screenNo
+        self.screen_info = "1000" #tr요청
+        self.screen_real_search = "3000" #실시간조건검색
+        self.screen_real_monitor = "3001" #실시간모니터링
+        self.screen_trade_buy = "4001" #매수
+        self.screen_trade_sell = "4002" #매도
+
+        
 
 
         self.get_ocx_instance()
@@ -55,9 +63,11 @@ class Kiwoom(QAxWidget):
     def set_event_slots(self):
         self.OnEventConnect.connect(self.on_event_connect)
         self.OnReceiveMsg.connect(self.on_receive_msg)
-        self.OnReceiveTrData.connect(self.tr.on_receive_tr_data)  # tr 수신 이벤트
+        self.OnReceiveTrData.connect(self.transport.on_receive_tr_data)  # tr 수신 이벤트
+        self.OnReceiveRealData.connect(self.on_receive_real_data)
         self.OnReceiveConditionVer.connect(self.condi.on_receive_condition_ver)
         self.OnReceiveRealCondition.connect(self.condi.on_receive_real_condition)
+        self.OnReceiveChejanData.connect(self.chejan.on_receive_chejan_data)  # 주문 접수/확인 수신시 이벤트
 
 
 
@@ -88,6 +98,37 @@ class Kiwoom(QAxWidget):
         self.logger.debug("rqname: {}".format(sRQName))
         self.logger.debug("trcode: {}".format(sTrCode))
         self.logger.debug("msg: {}".format(sMsg))
+
+    def on_receive_real_data(self, sCode, sRealType, sRealData):
+        """
+        OnReceiveRealData(
+          BSTR sCode,        // 종목코드
+          BSTR sRealType,    // 실시간타입
+          BSTR sRealData    // 실시간 데이터 전문 (사용불가)
+        )
+        Kiwoom Receive Realtime Data Callback, 실시간데이터를 받은 시점을 알려준다.
+        setRealReg() 메서드로 등록한 실시간 데이터도 이 이벤트 메서드에 전달됩니다.
+        getCommRealData() 메서드를 이용해서 실시간 데이터를 얻을 수 있습니다.
+        """
+        self.logger.debug("function: on_receive_real_data")
+        self.logger.debug("code: {}".format(sCode))
+        self.logger.debug("real_type: {}".format(sRealType))
+        self.logger.debug("real_data: {}".format(sRealData))
+        
+        currprice = abs(int(self.get_comm_real_data(sCode, "10")))
+        self.stock_info['종목정보'][sCode]['현재가'] = currprice
+
+        if currprice >= self.stock_info['종목정보'][sCode]['목표가']:
+            self.logger.info("\n매도 종목 발생 : " + sCode)
+            #self.notify_callback('OnReceiveRealData', sRealData, "매도")
+            self.sell_marketPrice(sCode, self.stock_info['종목정보'][sCode]['주문가능수량'])
+            self.set_real_remove(self.kw.screen_real_monitor, sCode)
+            self.logger.info("\n실시간 모니터링을 종료합니다"
+                            +"\n종목코드 : " + sCode
+                            +"\n종목명 : " + self.stock_info['종목정보'][sCode]['종목명'])
+
+
+    
 
     #Public
     #Login Kiwoom API
@@ -153,7 +194,6 @@ class Kiwoom(QAxWidget):
 
     def get_balance(self):
         self.logger.debug("function: get_balance")
-        self.stock_info = {}
         
         #call Balance
         inputs = {
@@ -177,7 +217,14 @@ class Kiwoom(QAxWidget):
                             + "\n현재가: " + format(int(data["현재가"]), ',') + "원"
                             + "\n보유수량: " + str(data["보유수량"]) + "주"
             )
-
+        if not self.real_list:
+            search_type = 0
+        else:
+            search_type = 1
+        self.set_real_reg(self.screen_real_monitor, code, '10;20', search_type)
+        self.logger.info("\n실시간 모니터링을 시작합니다"
+                +"\n종목코드 : " + code
+                +"\n종목명 : " + data['종목명'])
         #realdata 추가 
 
     def get_curr_price(self, strCode):
@@ -292,7 +339,7 @@ class Kiwoom(QAxWidget):
             OnReceiveTRData()이벤트가 발생될때 수신한 데이터를 얻어오는 함수입니다.
             이 함수는 OnReceiveTRData()이벤트가 발생될때 그 안에서 사용해야 합니다.
         """
-        self.logger.debug(f"getCommData({strItem})")
+        #self.logger.debug(f"getCommData({strItem})")
         ret = self.dynamicCall("GetCommData(String, String, int, String", sTrCode, sRQName, nIndex, strItem)
         return ret.strip()
 
@@ -332,9 +379,61 @@ class Kiwoom(QAxWidget):
         """
         ret = self.dynamicCall("GetConditionNameList()")
         return ret
+        
+        
+    def set_real_reg(self, sScrNo, sTrCode, sFids, strType):
+        """
+        SetRealReg(
+            BSTR sScrNo,   // 화면번호
+            BSTR strCode,   // 종목코드 리스트
+            BSTR sFids,  // 실시간 FID리스트
+            BSTR strType   // 실시간 등록 타입, 0또는 1
+        )
+        종목코드와 FID 리스트를 이용해서 실시간 시세를 등록하는 함수입니다.
+        한번에 등록가능한 종목과 FID갯수는 100종목, 100개 입니다.
+        실시간 등록타입을 0으로 설정하면 등록한 종목들은 실시간 해지되고 등록한 종목만 실시간 시세가 등록됩니다.
+        실시간 등록타입을 1로 설정하면 먼저 등록한 종목들과 함께 실시간 시세가 등록됩니다
+        실시간 데이터는 실시간 타입 단위로 receiveRealData() 이벤트로 전달되기 때문에,
+        이 메서드에서 지정하지 않은 fid 일지라도, 실시간 타입에 포함되어 있다면, 데이터 수신이 가능하다.
+        """
+        ret = self.dynamicCall("SetRealReg(QString, QString, QString, QString)", sScrNo, sTrCode, sFids, strType)
+        self.real_list.append(sTrCode)
+        return ret
 
-    def buyMarketPrice(self, code, quantity):
-        self.send_order("시장가_신규매 수", self.screen_trade, self.acc_no, 1, code, quantity, 0, "03", "")
+    def set_real_remove(self, sScrNo, sTrCode):
+        """
+        SetRealRemove(
+            BSTR strScrNo,    // 화면번호 또는 ALL
+            BSTR strDelCode   // 종목코드 또는 ALL
+        )
+        실시간 데이터 중지 메서드
+        ※ A종목에 대한 실시간이 여러화면번호로 중복등록되어 있는 경우 특정화면번호를 이용한
+            SetRealRemove() 함수호출시 A종목의 실시간시세는 해지되지 않습니다.
+        """
+        self.dynamicCall("SetRealRemove(QString, QString)", sScrNo, sTrCode)
+        self.real_list.remove(sTrCode)
+
+
+    def get_comm_real_data(self, strCode, nFid):
+        """ 
+        GetCommRealData(
+          BSTR strCode,   // 종목코드
+          long nFid   // 실시간 타입에 포함된FID (Feild ID)
+        )
+        실시간 데이터 획득 메서드
+        이 메서드는 반드시 receiveRealData() 이벤트 메서드가 호출될 때, 그 안에서 사용해야 합니다.
+        :return: string - fid에 해당하는 데이터
+        """
+        ret = self.dynamicCall("GetCommRealData(QString, int)", strCode, nFid)
+        return ret
+
+
+
+    def buy_marketPrice(self, code, quantity):
+        return self.send_order("시장가_신규매수", self.screen_trade_buy, self.account_no, 1, code, quantity, 0, "03", "")
+
+    def sell_marketPrice(self, code, quantity):
+        return self.send_order("시장가_신규매도", self.screen_trade_sell, self.account_no, 2, code, quantity, 0, "03", "")
 
     def send_order(self, sRQName, sScrNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGB, sOrgOrderNo):
         """
@@ -355,9 +454,24 @@ class Kiwoom(QAxWidget):
         1초에 5회만 주문가능하며 그 이상 주문요청하면 에러 -308을 리턴합니다.
         ※ 시장가주문시 주문가격은 0으로 입력합니다.
         ※ 취소주문일때 주문가격은 0으로 입력합니다.
+
+        매도/매수 주문 함수
+        주문유형(order_type) (1:신규매수, 2:신규매도, 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정)
+        hoga_gubun – 00:지정가,    03:시장가,    05:조건부지정가,   06:최유리지정가, 07:최우선지정가,
+                    10:지정가IOC, 13:시장가IOC, 16:최유리IOC,      20:지정가FOK,
+                    23:시장가FOK, 26:최유리FOK, 61:장전시간외종가,  62:시간외단일가, 81:장후시간외종가
+        ※ 시장가, 최유리지정가, 최우선지정가, 시장가IOC, 최유리IOC, 시장가FOK, 최유리FOK, 장전시간외, 장후시간외 주문시
+            주문가격을 입력하지 않습니다.
         """
         ret = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                             [sRQName, sScrNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGB, sOrgOrderNo])
         return ret
+
+    def get_chejan_data(self, fid):
+        """
+
+        :return:
+        """
+        return self.dynamicCall("GetChejanData(int)", fid)
 
 

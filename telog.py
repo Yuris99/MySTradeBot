@@ -35,7 +35,7 @@ class Telog():
             format(self.logger.name)
         fileformatter = logging.Formatter(fileformat)
         #log_path = "log/app_{}.log".format(self.logger.name)
-        file_log_path = datetime.now().strftime("log/TradeLog %Y-%m-%d.log")
+        file_log_path = datetime.now().strftime("log/AppLog %Y-%m-%d.log")
         file_handler = logging.FileHandler(filename = file_log_path, encoding="utf-8")
         file_handler.suffix = '%Y%m%d'
         file_handler.setFormatter(fileformatter)
@@ -77,4 +77,26 @@ class LogTelHandler(logging.Handler):
             text = self.formatter.format(record)
         
         self.telbot.sendMessage(chat_id=self.chatid, text=text)
+
+
+#거래 로그
+@singleton
+class TradeLog():
+    def __init__(self):
+        self.logger = logging.getLogger("TradeLog")
+        self.logger.setLevel(logging.INFO)
+        
+
+        #set file handler
+        fileformat = '[%(asctime)s] %(message)s'
+        fileformatter = logging.Formatter(fileformat)
+        #log_path = "log/app_{}.log".format(self.logger.name)
+        file_log_path = datetime.now().strftime("log/TradeLog %Y-%m-%d.log")
+        file_handler = logging.FileHandler(filename = file_log_path, encoding="utf-8")
+        file_handler.suffix = '%Y%m%d'
+        file_handler.setFormatter(fileformatter)
+        file_handler.setLevel(logging.INFO)
+
+        # Add Formatters
+        self.logger.addHandler(file_handler)
 

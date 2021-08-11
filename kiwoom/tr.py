@@ -8,7 +8,6 @@ class TrManager():
     def __init__(self, kw):
         self.kw = kw
         self.logger = Telog().logger
-        self.kw.reg_callback("OnReceiveTrData", "현재가요청", self.check_start_trade)
         
     def on_receive_tr_data(self, sScrNo, sRQName, sTrCode, sRecordName, sPrevNext):
         """
@@ -106,16 +105,7 @@ class TrManager():
 
             
 
-    def check_start_trade(self, event_data):
-        if TradeAlgo.FindBuy(event_data):
-            self.logger.info("매수 종목 발생 : " + event_data['종목코드'])
-            
-            vr_cnt = self.set_vrbank()
-            if vr_cnt == -1:
-                self.logger.info("모든 계좌가 사용중입니다")
-                self.logger.info("매수에 실패하였습니다")
-                return
-            buy_stock_cnt = (self.vr_bank[vr_cnt]['출금가능금액'] / self.stock_info['종목정보']["현재가"]) - 1
+    
 
             
 
