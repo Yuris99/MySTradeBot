@@ -38,7 +38,7 @@ class TrManager():
 
         if sRQName == "계좌평가요청":
             self.logger.debug("get Balance()")
-            n = self.kw.get_repeat_cnt(sTrCode, sRQName)
+            stock_cnt = self.kw.get_repeat_cnt(sTrCode, sRQName)
             acc_info = {}
             stock_info = {}
 
@@ -63,16 +63,22 @@ class TrManager():
                 acc_info[f] = data
 
             #get stockInfo(multi data)
-            for n in range(n):
+            for i in range(stock_cnt):
                 tmp = {}
-                code = self.kw.get_comm_data(sTrCode, sRQName, 0, "종목번호").strip()[1:]
+                code = self.kw.get_comm_data(sTrCode, sRQName, i, "종목번호").strip()[1:]
+                self.logger.debug("종목번호: " + code)
                 for f in fid_list2:
-                    data = self.kw.get_comm_data(sTrCode, sRQName, 0, f)
+                    data = self.kw.get_comm_data(sTrCode, sRQName, i, f)
                     if f == "종목명": data = str(data).strip()
                     elif f == "수익률(%)" or f == "보유비중(%)": data = float(data)
                     else: data = int(data)
                     tmp[f] = data
-                tmp["목표가"] = tmp["매입가"] + (tmp["매입가"] * 0.035)
+                #tmp["목표가"] = tmp["매입가"] + (tmp["매입가"] * 0.035)
+                tmp['매도중'] = False
+                self.logger.debug("디버깅용으로 목표가 == 현재가 이후 수정바람")
+                tmp["목표가"] = tmp["현재가"]
+                tmp["매수가"] = tmp["매입가"]
+                tmp["주문가능수량"] = tmp["매매가능수량"]
                 stock_info[code] = tmp 
             
 
@@ -83,6 +89,7 @@ class TrManager():
 
         if sRQName == "현재가요청":
             self.logger.debug("get currPrice()")
+            self.kw.set_real_remove("self.kw.screen_info", 'ALL')
             
             code = self.kw.get_comm_data(sTrCode, sRQName, 0, "종목코드").strip()
             name = self.kw.get_comm_data(sTrCode, sRQName, 0, "종목명").strip()

@@ -1,4 +1,5 @@
 
+from os import truncate
 from mydata import keyManager
 from telog import Telog
 import TradeAlgo
@@ -63,7 +64,7 @@ class ConditionManager():
         self.logger.debug("function: on_receive_real_condition")
         
         if event_type == "I":
-            if TradeAlgo.checkstock(strCode) or True: #Debug
+            if TradeAlgo.checkstock(strCode): #디버깅
                 data = [
                     ("code", strCode),
                     ("event_type", event_type),

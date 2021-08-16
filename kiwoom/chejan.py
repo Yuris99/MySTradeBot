@@ -1,28 +1,28 @@
 
+from logging import log
 from telog import Telog
 from telog import TradeLog
 
 class Chejan(object):
     """receiveChejanData() 이벤트 메서드로 전달되는 FID 목록
     """
-    """
     fid_table = {
         9201: '계좌번호',
         9203: '주문번호',
         9205: '관리자사번',
         9001: '종목코드',
-        912: '주문업무분류',
-        913: '주문상태',
+        912: '주문업무분류',  #(jj:주식주문)
+        913: '주문상태', #(접수, 확인, 체결) (10:원주문, 11:정정주문, 12:취소주문, 20:주문확인, 21:정정확인, 22:취소확인, 90,92:주문거부) #https://bbn.kiwoom.com/bbn.openAPIQnaBbsDetail.do
         302: '종목명',
         900: '주문수량',
         901: '주문가격',
         902: '미체결수량',
         903: '체결누계금액',
         904: '원주문번호',
-        905: '주문구분',
-        906: '매매구분',
-        907: '매도수구분',
-        908: '주문/체결시간',
+        905: '주문구분',  #(+매수, -매도, -매도정정, +매수정정, 매수취소, 매도취소)
+        906: '매매구분', #(보통, 시장가등)
+        907: '매도수구분',# 매도(매도정정, 매도취도 포함)인 경우 1, 매수(매수정정, 매수취소 포함)인 경우 2
+        908: '주문/체결시간',#(HHMMSS)
         909: '체결번호',
         910: '체결가',
         911: '체결량',
@@ -68,49 +68,6 @@ class Chejan(object):
         305: '상한가',
         306: '하한가'
     }
-    """
-    fid_use = {
-        9201: '계좌번호',
-        9203: '주문번호',
-        9001: '종목코드',
-        912: '주문업무분류', #(jj:주식주문)
-        913: '주문상태',#(접수, 확인, 체결) (10:원주문, 11:정정주문, 12:취소주문, 20:주문확인, 21:정정확인, 22:취소확인, 90,92:주문거부) #https://bbn.kiwoom.com/bbn.openAPIQnaBbsDetail.do
-        302: '종목명',
-        900: '주문수량',
-        901: '주문가격',
-        902: '미체결수량',
-        903: '체결누계금액',
-        904: '원주문번호',
-        905: '주문구분', #(+매수, -매도, -매도정정, +매수정정, 매수취소, 매도취소)
-        906: '매매구분',#(보통, 시장가등)
-        907: '매도수구분',# 매도(매도정정, 매도취도 포함)인 경우 1, 매수(매수정정, 매수취소 포함)인 경우 2
-        908: '주문/체결시간',#(HHMMSS)
-        909: '체결번호',
-        910: '체결가',
-        911: '체결량',
-        10: '현재가',
-        12: '등락율',
-        914: '단위체결가',
-        915: '단위체결량',
-        938: '당일매매수수료',
-        939: '당일매매세금',
-        919: '거부사유',
-        920: '화면번호',
-        930: '보유수량',
-        931: '매입단가',
-        932: '총매입가',
-        933: '주문가능수량',
-        945: '당일순매수수량',
-        946: '매도/매수구분',
-        950: '당일총매도손익',
-        951: '예수금',
-        307: '기준가',
-        8019: '손익율',
-        990: '당일실현손익(유가)',
-        991: '당일신현손익률(유가)',
-        305: '상한가',
-        306: '하한가'
-    }
 
     def __init__(self, kw):
         self.kw = kw
@@ -137,47 +94,49 @@ class Chejan(object):
         GetChejanData()함수를 이용해서 FID항목별 값을 얻을수 있습니다.
         
         """
-        try:
-            gubun = int(sGubun)
-            self.logger.debug("function: on_receive_chejan_data")
-            self.logger.debug("gubun(0:주문체결통보, 1:잔고통보, 3:특이신호): {}".format(gubun))
-            self.logger.debug("item_cnt: {}".format(nItemCnt))
-            self.logger.debug("fid_list: {}".format(sFidList))
+        gubun = int(sGubun)
+        self.logger.debug("function: on_receive_chejan_data")
+        self.logger.debug("gubun(0:주문체결통보, 1:잔고통보, 3:특이신호): {}".format(gubun))
+        self.logger.debug("item_cnt: {}".format(nItemCnt))
+        self.logger.debug("fid_list: {}".format(sFidList))
 
-            #주문 / 체결 통보
-            if gubun == 0:
-                self.logger.debug("주문통보/체결통보")
-            elif gubun == 1:
-                self.logger.debug("잔고통보")
-                
-            data = self.make_data(gubun, nItemCnt, sFidList)
+        #주문 / 체결 통보
+        if gubun == 0:
+            self.logger.debug("주문통보/체결통보")
+        elif gubun == 1:
+            self.logger.debug("잔고통보")
+            
+        data = self.make_data(gubun, nItemCnt, sFidList)
 
-            # callback
-            self.logger.info("[OnReceiveChejanData] Notify callback method..")
-            self.notify_callback('OnReceiveChejanData', data, str(gubun))
+        # callback
+        self.logger.debug("[OnReceiveChejanData] Notify callback method..")
+        self.kw.notify_callback('OnReceiveChejanData', data, str(gubun))
 
-
+        """
         except Exception as e:
             self.logger.error("ERROR IN 'on_receive_chejan_data'")
             self.logger.error(e)
+        """
 
     def make_data(self, gubun, item_cnt, fid_list):
         data = {"gubun": gubun}
 
         for fid in fid_list.split(";"):
             fid = int(fid)
-            key = self.fid_table[fid]
-            value = self.kw.get_chejan_data(fid)
-            data[key] = value
+            if fid in self.fid_table:
+                key = self.fid_table[fid]
+                value = self.kw.get_chejan_data(fid)
+                data[key] = value
         return data
 
     def chejan_order_callback(self, event_data):
         self.logger.debug("function: chejan_order_callback")
+        event_data['종목코드'] = event_data['종목코드'][1:]
         event_data['주문구분'] = event_data['주문구분'].strip().lstrip('+').lstrip('-')
 
         if event_data['주문구분'] == '매수':
             self.chejan_buy(event_data)
-        elif event_data['주식구분'] == '매도':
+        elif event_data['주문구분'] == '매도':
             self.chejan_sell(event_data)
 
     #매수주문시
@@ -206,21 +165,27 @@ class Chejan(object):
                                 +"\n주문수량 : " + event_data['주문수량']
                                 +"\n체결가 : " + event_data['체결가'] + "원")
                 goal = int(event_data['체결가']) + (int(event_data['체결가']) * 0.035)
+                sub = int(event_data['체결가']) - (int(event_data['체결가']) * 0.03)
+                #goal = int(event_data['체결가'])
                 self.kw.stock_info['종목정보'][event_data['종목코드']].update({"목표가": goal})
+                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"추가가": sub})
                 self.kw.stock_info['종목정보'][event_data['종목코드']].update({"매수가": int(event_data['체결가'])})
+                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"매도중": False})
+                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"주문가능수량": event_data['주문수량']})
                 #현재가정보만 가져옴
                 if not self.kw.real_list:
                     search_type = 0
                 else:
                     search_type = 1
-                self.kw.set_real_reg(self.kw.screen_real_monitor, event_data['종목코드'], '10;20', search_type)
+                self.kw.set_real_reg(self.kw.screen_real_monitor, event_data['종목코드'], '20', search_type)
                 self.logger.info("\n실시간 모니터링을 시작합니다"
                                 +"\n목표가 : " + str(goal) + "원")
 
                 #파일저장
                 logmsg = "매수\n"
                 for key, value in self.kw.stock_info['종목정보'][event_data['종목코드']].items():
-                    logmsg += key + " : " + value + "\n"
+                    logmsg += key + " : " + str(value) + "\n"
+                self.logger.debug(logmsg)
                 self.tlog.info(logmsg)
                                 
 
@@ -232,7 +197,7 @@ class Chejan(object):
             self.logger.info("매도 접수가 완료되었습니다"
                             +"\n종목번호 : " + event_data['종목코드']
                             +"\n종목명 : " + event_data['종목명']
-                            +"\n매수가 : " + event_data['매수가'] + "원"
+                            +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
                             +"\n현재가 : " + event_data['현재가'] + "원"
                             +"\n주문수량 : " + event_data['주문수량'])
         
@@ -241,7 +206,7 @@ class Chejan(object):
                 self.logger.info("매도 주문이 일부 체결되었습니다" 
                                 +"\n종목번호 : " + event_data['종목코드']
                                 +"\n종목명 : " + event_data['종목명']
-                                +"\n매수가 : " + event_data['매수가'] + "원"
+                            +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
                                 +"\n체결량 : " + event_data['단위체결량'] + "주"
                                 +"\n체결가 : " + event_data['단위체결가'] + "원"
                                 +"\n남은 미체결수량: " + event_data['미체결수량'] + "주")
@@ -250,29 +215,30 @@ class Chejan(object):
                 self.logger.info("매도 주문이 체결되었습니다 : " 
                                 +"\n종목번호 : " + event_data['종목코드']
                                 +"\n종목명 : " + event_data['종목명']
-                                +"\n매수가 : " + event_data['매수가'] + "원"
+                                +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
                                 +"\n주문수량 : " + event_data['주문수량']
-                                +"\n체결가 : " + event_data['체결가'] + "원"
-                                +"\n손익률 : " + event_data['손익률'] + "%")
+                                +"\n체결가 : " + event_data['체결가'] + "원")
                 goal = int(event_data['체결가']) + (int(event_data['체결가']) * 0.035)
                 self.kw.stock_info['종목정보'][event_data['종목코드']].update({"목표가": goal})
 
-                self.logger.info("\n당일실현손익 : "  + self.kw.stock_info['종목정보'][event_data['종목코드']['당일실현손익(유가)']]
-                                +"\n당일신현손익률 : " + self.kw.stock_info['종목정보'][event_data['종목코드']['당일신현손익률(유가)']])
+                #self.logger.info("\n당일실현손익 : "  + self.kw.stock_info['종목정보'][event_data['종목코드']]['당일실현손익(유가)']
+                #                +"\n당일신현손익률 : " + self.kw.stock_info['종목정보'][event_data['종목코드']]['당일신현손익률(유가)'])
+                self.kw.stock_info['종목정보'][event_data['종목코드']]['매도중'] = False
 
 
                 #파일저장
                 logmsg = "매도\n"
                 for key, value in self.kw.stock_info['종목정보'][event_data['종목코드']].items():
-                    logmsg += key + " : " + value + "\n"
+                    logmsg += key + " : " + str(value) + "\n"
+                self.logger.debug(logmsg)
                 self.tlog.info(logmsg)
                 
                 # callback
                 self.logger.info("[SellStock CallBack] Notify callback method..")
-                self.notify_callback('OnSellStock', event_data['종목코드'], "매도완료")
+                self.kw.notify_callback('OnSellStock', event_data['종목코드'], "매도완료")
 
 
 
 
-    def chejan_jango_callback(self):
+    def chejan_jango_callback(self, event_data):
         self.logger.debug("function: chejan_jango_callback")

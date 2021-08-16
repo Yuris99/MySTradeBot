@@ -1,3 +1,5 @@
+import sys
+
 from PyQt5.QAxContainer import *
 from PyQt5.QtCore import QEventLoop
 from singleton_decorator import singleton
@@ -29,7 +31,8 @@ class Kiwoom(QAxWidget):
             "OnReceiveChejanData": {},
             "OnReceiveMsg": {},
             #custom
-            "OnSellStock": {}
+            "OnSellStock": {},
+            "StartSetStock": {}
         }
         self.stock_info = {}
 
@@ -110,23 +113,57 @@ class Kiwoom(QAxWidget):
         setRealReg() 메서드로 등록한 실시간 데이터도 이 이벤트 메서드에 전달됩니다.
         getCommRealData() 메서드를 이용해서 실시간 데이터를 얻을 수 있습니다.
         """
+        """
         self.logger.debug("function: on_receive_real_data")
         self.logger.debug("code: {}".format(sCode))
         self.logger.debug("real_type: {}".format(sRealType))
         self.logger.debug("real_data: {}".format(sRealData))
-        
-        currprice = abs(int(self.get_comm_real_data(sCode, "10")))
-        self.stock_info['종목정보'][sCode]['현재가'] = currprice
+        """
 
-        if currprice >= self.stock_info['종목정보'][sCode]['목표가']:
-            self.logger.info("\n매도 종목 발생 : " + sCode)
-            #self.notify_callback('OnReceiveRealData', sRealData, "매도")
-            self.sell_marketPrice(sCode, self.stock_info['종목정보'][sCode]['주문가능수량'])
-            self.set_real_remove(self.kw.screen_real_monitor, sCode)
-            self.logger.info("\n실시간 모니터링을 종료합니다"
-                            +"\n종목코드 : " + sCode
-                            +"\n종목명 : " + self.stock_info['종목정보'][sCode]['종목명'])
+        if sRealType == "장시작시간":
+            self.logger.debug("real_type: 장시작시간")
+            market_gubun =  self.get_comm_real_data(sCode, 215)
+            if market_gubun == '0':
+                remained_time =  self.get_comm_real_data(sCode, 214)
+                if int(remained_time) > 100:
+                    self.logger.info("장 시작 전입니다"
+                                    +"\n장 시작까지 남은시간 : " + remained_time[2:4] + "분")
+                else:
+                    self.logger.info("곧 장이 시작됩니다"
+                                    +"\n장 시작까지 남은시간 : " + remained_time[4:6] + "초")
+            elif market_gubun == '3':
+                    self.logger.info("장이 시작되었습니다!")
+            elif market_gubun == '2':
+                remained_time =  self.get_comm_real_data(sCode, 214)
+                if int(remained_time) > 100:
+                    self.logger.info("장 마감 " + remained_time[2:4] + "분전 입니다")
+                else:
+                    self.logger.info("곧 장이 마감됩니다"
+                                    +"\n장 마감까지 남은시간" + remained_time[4:6] + "초전")
+            elif market_gubun == '4':
+                self.logger.info("장이 마감되었습니다")
+                self.logger.info("프로그램을 종료합니다")
+                sys.exit(1)
+            else:
+                self.logger.debug("장 구분: " + market_gubun)
+            return
 
+        if sRealType == '주식체결':
+            currprice = abs(int(self.get_comm_real_data(sCode, "10")))
+            if sCode not in self.stock_info['종목정보']:
+                self.stock_info['종목정보'].update({sCode:{}})
+            self.stock_info['종목정보'][sCode]['현재가'] = currprice
+
+            if '매도중' in self.stock_info['종목정보'][sCode] and not self.stock_info['종목정보'][sCode]['매도중']:
+                if currprice >= self.stock_info['종목정보'][sCode]['목표가']:
+                    self.logger.info("\n매도 종목 발생 : " + sCode)
+                    #self.notify_callback('OnReceiveRealData', sRealData, "매도")
+                    self.stock_info['종목정보'][sCode]['매도중'] = True
+                    self.sell_marketPrice(sCode, int(self.stock_info['종목정보'][sCode]['주문가능수량']))
+                    self.set_real_remove(self.screen_real_monitor, sCode)
+                    self.logger.info("\n실시간 모니터링을 종료합니다"
+                                    +"\n종목코드 : " + sCode
+                                    +"\n종목명 : " + self.stock_info['종목정보'][sCode]['종목명'])
 
     
 
@@ -207,25 +244,28 @@ class Kiwoom(QAxWidget):
         self.event_loop.exec_()
 
         #log Balance
-        self.logger.info("미매도 종목")
-        for code, data in self.stock_info['종목정보'].items():
-            self.logger.info( "\n종목코드: " + code
-                            + "\n종목명: " + data["종목명"]
-                            + "\n수익률: " + str(data["수익률(%)"]) + "%"
-                            + "\n매입가: " + format(int(data["매입가"]), ',') + "원"
-                            + "\n목표가: " + format(int(data["목표가"]), ',') + "원"
-                            + "\n현재가: " + format(int(data["현재가"]), ',') + "원"
-                            + "\n보유수량: " + str(data["보유수량"]) + "주"
-            )
-        if not self.real_list:
-            search_type = 0
-        else:
-            search_type = 1
-        self.set_real_reg(self.screen_real_monitor, code, '10;20', search_type)
-        self.logger.info("\n실시간 모니터링을 시작합니다"
-                +"\n종목코드 : " + code
-                +"\n종목명 : " + data['종목명'])
-        #realdata 추가 
+        if self.stock_info['종목정보']:
+            self.logger.info("미매도 종목")
+            for code, data in self.stock_info['종목정보'].items():
+                self.logger.info( "\n종목코드: " + code
+                                + "\n종목명: " + data["종목명"]
+                                + "\n수익률: " + str(data["수익률(%)"]) + "%"
+                                + "\n매입가: " + format(int(data["매입가"]), ',') + "원"
+                                + "\n목표가: " + format(int(data["목표가"]), ',') + "원"
+                                + "\n현재가: " + format(int(data["현재가"]), ',') + "원"
+                                + "\n보유수량: " + str(data["보유수량"]) + "주"
+                )
+                #realdata 추가 
+                if not self.real_list:
+                    search_type = 0
+                else:
+                    search_type = 1
+                self.set_real_reg(self.screen_real_monitor, code, '20', search_type)
+                self.logger.info("\n실시간 모니터링을 시작합니다"
+                        +"\n종목코드 : " + code
+                        +"\n종목명 : " + data['종목명'])
+
+                self.notify_callback("StartSetStock", code, "미매도종목")
 
     def get_curr_price(self, strCode):
         """특정종목의 현재 주식가격을 불러옴
@@ -261,7 +301,8 @@ class Kiwoom(QAxWidget):
         """
         self.logger.debug("function: notify_callback")
         if key in self.event_callback_fn[event]:
-            self.logger.debug("Find callback Function: " + event)
+            self.logger.debug("Find callback Function: " + event + ", Key : " + key)
+            self.logger.debug(data)
             self.event_callback_fn[event][key](data)
 
 
@@ -355,7 +396,9 @@ class Kiwoom(QAxWidget):
         이렇게 수신한 데이터갯수를 얻을때 사용합니다.
         이 함수는 OnReceiveTRData()이벤트가 발생될때 그 안에서 사용해야 합니다.
         """
-        return self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRecordName)
+        ret = self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRecordName)
+        self.logger.debug("function: get_repeat_cnt : " + str(ret))
+        return ret
 
     
 
@@ -410,8 +453,10 @@ class Kiwoom(QAxWidget):
         ※ A종목에 대한 실시간이 여러화면번호로 중복등록되어 있는 경우 특정화면번호를 이용한
             SetRealRemove() 함수호출시 A종목의 실시간시세는 해지되지 않습니다.
         """
+        self.logger.debug("function set_real_remove")
         self.dynamicCall("SetRealRemove(QString, QString)", sScrNo, sTrCode)
-        self.real_list.remove(sTrCode)
+        if sTrCode in self.real_list:
+            self.real_list.remove(sTrCode)
 
 
     def get_comm_real_data(self, strCode, nFid):
@@ -430,6 +475,7 @@ class Kiwoom(QAxWidget):
 
 
     def buy_marketPrice(self, code, quantity):
+        self.logger.debug("function: buy_marketPrice")
         return self.send_order("시장가_신규매수", self.screen_trade_buy, self.account_no, 1, code, quantity, 0, "03", "")
 
     def sell_marketPrice(self, code, quantity):
@@ -463,6 +509,7 @@ class Kiwoom(QAxWidget):
         ※ 시장가, 최유리지정가, 최우선지정가, 시장가IOC, 최유리IOC, 시장가FOK, 최유리FOK, 장전시간외, 장후시간외 주문시
             주문가격을 입력하지 않습니다.
         """
+        self.logger.debug("function: send_order")
         ret = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                             [sRQName, sScrNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGB, sOrgOrderNo])
         return ret

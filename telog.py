@@ -26,7 +26,7 @@ class Telog():
         #log_path = "log/app_{}.log".format(self.logger.name)
         debug_log_path = datetime.now().strftime("debug/Debugger %Y-%m-%d %H-%M-%S.log")
         debug_handler = logging.FileHandler(filename = debug_log_path, encoding="utf-8")
-        debug_handler.suffix = '%Y%m%d'
+        #debug_handler.suffix = '%Y%m%d'
         debug_handler.setFormatter(debugformatter)
         debug_handler.setLevel(logging.DEBUG)
 
@@ -37,7 +37,7 @@ class Telog():
         #log_path = "log/app_{}.log".format(self.logger.name)
         file_log_path = datetime.now().strftime("log/AppLog %Y-%m-%d.log")
         file_handler = logging.FileHandler(filename = file_log_path, encoding="utf-8")
-        file_handler.suffix = '%Y%m%d'
+        #file_handler.suffix = '%Y%m%d'
         file_handler.setFormatter(fileformatter)
         file_handler.setLevel(logging.INFO)
 
@@ -93,7 +93,7 @@ class TradeLog():
         #log_path = "log/app_{}.log".format(self.logger.name)
         file_log_path = datetime.now().strftime("log/TradeLog %Y-%m-%d.log")
         file_handler = logging.FileHandler(filename = file_log_path, encoding="utf-8")
-        file_handler.suffix = '%Y%m%d'
+        #file_handler.suffix = '%Y%m%d'
         file_handler.setFormatter(fileformatter)
         file_handler.setLevel(logging.INFO)
 
