@@ -119,7 +119,7 @@ class MainApp:
                 self.logger.error("Fail to Call BuyFunction")
 
     def reset_vr_bank(self, code):
-        del(self.kw.stock_info['종목정보'][code])
+        del(self.kw.stock_info[code])
         check = False
         for i in range(self.target_buy_count):
             if self.vr_bank[i]['사용종목'] == code:

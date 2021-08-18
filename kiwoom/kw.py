@@ -35,6 +35,7 @@ class Kiwoom(QAxWidget):
             "StartSetStock": {}
         }
         self.stock_info = {}
+        self.account_info = {}
 
         #getClass
         self.transport = TrManager(self)

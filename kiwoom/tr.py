@@ -82,7 +82,7 @@ class TrManager():
                 stock_info[code] = tmp 
             
 
-            self.kw.stock_info['계좌정보'] = acc_info
+            self.kw.account_info = acc_info
             self.kw.stock_info['종목정보'] = stock_info
             
             self.kw.event_loop.exit()

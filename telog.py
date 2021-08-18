@@ -79,8 +79,8 @@ class LogTelHandler(logging.Handler):
         try:
             self.telbot.sendMessage(chat_id=self.chatid, text=text)
         except Exception as e:
-            self.logger.error("Telegram SendError")
-            self.logger.error(e)
+            print("Telegram SendError")
+            print(e)
 
 #거래 로그
 @singleton
