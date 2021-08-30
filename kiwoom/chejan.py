@@ -1,5 +1,3 @@
-
-from logging import log
 from telog import Telog
 from telog import TradeLog
 
@@ -167,11 +165,11 @@ class Chejan(object):
                 goal = int(event_data['체결가']) + (int(event_data['체결가']) * 0.035)
                 sub = int(event_data['체결가']) - (int(event_data['체결가']) * 0.03)
                 #goal = int(event_data['체결가'])
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"목표가": goal})
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"추가가": sub})
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"매수가": int(event_data['체결가'])})
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"매도중": False})
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"주문가능수량": event_data['주문수량']})
+                self.kw.stock_info[event_data['종목코드']].update({"목표가": goal})
+                self.kw.stock_info[event_data['종목코드']].update({"추가가": sub})
+                self.kw.stock_info[event_data['종목코드']].update({"매수가": int(event_data['체결가'])})
+                self.kw.stock_info[event_data['종목코드']].update({"매도중": False})
+                self.kw.stock_info[event_data['종목코드']].update({"주문가능수량": event_data['주문수량']})
                 #현재가정보만 가져옴
                 if not self.kw.real_list:
                     search_type = 0
@@ -183,7 +181,7 @@ class Chejan(object):
 
                 #파일저장
                 logmsg = "매수\n"
-                for key, value in self.kw.stock_info['종목정보'][event_data['종목코드']].items():
+                for key, value in self.kw.stock_info[event_data['종목코드']].items():
                     logmsg += key + " : " + str(value) + "\n"
                 self.logger.debug(logmsg)
                 self.tlog.info(logmsg)
@@ -197,7 +195,7 @@ class Chejan(object):
             self.logger.info("매도 접수가 완료되었습니다"
                             +"\n종목번호 : " + event_data['종목코드']
                             +"\n종목명 : " + event_data['종목명']
-                            +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
+                            +"\n매수가 : " + str(self.kw.stock_info[event_data['종목코드']]['매수가']) + "원"
                             +"\n현재가 : " + event_data['현재가'] + "원"
                             +"\n주문수량 : " + event_data['주문수량'])
         
@@ -206,7 +204,7 @@ class Chejan(object):
                 self.logger.info("매도 주문이 일부 체결되었습니다" 
                                 +"\n종목번호 : " + event_data['종목코드']
                                 +"\n종목명 : " + event_data['종목명']
-                            +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
+                            +"\n매수가 : " + str(self.kw.stock_info[event_data['종목코드']]['매수가']) + "원"
                                 +"\n체결량 : " + event_data['단위체결량'] + "주"
                                 +"\n체결가 : " + event_data['단위체결가'] + "원"
                                 +"\n남은 미체결수량: " + event_data['미체결수량'] + "주")
@@ -215,20 +213,20 @@ class Chejan(object):
                 self.logger.info("매도 주문이 체결되었습니다 : " 
                                 +"\n종목번호 : " + event_data['종목코드']
                                 +"\n종목명 : " + event_data['종목명']
-                                +"\n매수가 : " + str(self.kw.stock_info['종목정보'][event_data['종목코드']]['매수가']) + "원"
+                                +"\n매수가 : " + str(self.kw.stock_info[event_data['종목코드']]['매수가']) + "원"
                                 +"\n주문수량 : " + event_data['주문수량']
                                 +"\n체결가 : " + event_data['체결가'] + "원")
                 goal = int(event_data['체결가']) + (int(event_data['체결가']) * 0.035)
-                self.kw.stock_info['종목정보'][event_data['종목코드']].update({"목표가": goal})
+                self.kw.stock_info[event_data['종목코드']].update({"목표가": goal})
 
-                #self.logger.info("\n당일실현손익 : "  + self.kw.stock_info['종목정보'][event_data['종목코드']]['당일실현손익(유가)']
-                #                +"\n당일신현손익률 : " + self.kw.stock_info['종목정보'][event_data['종목코드']]['당일신현손익률(유가)'])
-                self.kw.stock_info['종목정보'][event_data['종목코드']]['매도중'] = False
+                #self.logger.info("\n당일실현손익 : "  + self.kw.stock_info[event_data['종목코드']]['당일실현손익(유가)']
+                #                +"\n당일신현손익률 : " + self.kw.stock_info[event_data['종목코드']]['당일신현손익률(유가)'])
+                self.kw.stock_info[event_data['종목코드']]['매도중'] = False
 
 
                 #파일저장
                 logmsg = "매도\n"
-                for key, value in self.kw.stock_info['종목정보'][event_data['종목코드']].items():
+                for key, value in self.kw.stock_info[event_data['종목코드']].items():
                     logmsg += key + " : " + str(value) + "\n"
                 self.logger.debug(logmsg)
                 self.tlog.info(logmsg)

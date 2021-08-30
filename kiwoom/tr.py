@@ -73,17 +73,17 @@ class TrManager():
                     elif f == "수익률(%)" or f == "보유비중(%)": data = float(data)
                     else: data = int(data)
                     tmp[f] = data
-                #tmp["목표가"] = tmp["매입가"] + (tmp["매입가"] * 0.035)
+                tmp["목표가"] = tmp["매입가"] + (tmp["매입가"] * 0.07)
                 tmp['매도중'] = False
-                self.logger.debug("디버깅용으로 목표가 == 현재가 이후 수정바람")
-                tmp["목표가"] = tmp["현재가"]
+                #self.logger.debug("디버깅용으로 목표가 == 현재가 이후 수정바람")
+                #tmp["목표가"] = tmp["현재가"]
                 tmp["매수가"] = tmp["매입가"]
                 tmp["주문가능수량"] = tmp["매매가능수량"]
                 stock_info[code] = tmp 
             
 
             self.kw.account_info = acc_info
-            self.kw.stock_info['종목정보'] = stock_info
+            self.kw.stock_info = stock_info
             
             self.kw.event_loop.exit()
 
@@ -97,17 +97,17 @@ class TrManager():
             start = abs(int(self.kw.get_comm_data(sTrCode, sRQName, 0, "시가")))
             value = abs(int(self.kw.get_comm_data(sTrCode, sRQName, 0, "거래량")))
 
-            if code not in self.kw.stock_info['종목정보']:
-                self.kw.stock_info['종목정보'].update({code:{}})
-            self.kw.stock_info['종목정보'][code].update({"종목코드": code})
-            self.kw.stock_info['종목정보'][code].update({"종목명": name})
-            self.kw.stock_info['종목정보'][code].update({"현재가": curr})
-            self.kw.stock_info['종목정보'][code].update({"시가": start})
-            self.kw.stock_info['종목정보'][code].update({"거래량": value})
+            if code not in self.kw.stock_info:
+                self.kw.stock_info.update({code:{}})
+            self.kw.stock_info[code].update({"종목코드": code})
+            self.kw.stock_info[code].update({"종목명": name})
+            self.kw.stock_info[code].update({"현재가": curr})
+            self.kw.stock_info[code].update({"시가": start})
+            self.kw.stock_info[code].update({"거래량": value})
             
-            self.logger.debug(self.kw.stock_info['종목정보'][code])
+            self.logger.debug(self.kw.stock_info[code])
 
-            self.kw.notify_callback('OnReceiveTrData', self.kw.stock_info['종목정보'][code], sRQName) 
+            self.kw.notify_callback('OnReceiveTrData', self.kw.stock_info[code], sRQName) 
 
 
             

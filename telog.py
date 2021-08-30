@@ -49,7 +49,8 @@ class Telog():
         stream_handler.setLevel(logging.DEBUG) #for test 
         
         #set telegram handler
-        telformat= datetime.now().strftime("[%m/%d %H:%M:%S.%f] ") + '%(message)s'
+        #telformat= datetime.now().strftime("[%m/%d %H:%M:%S.%f] ") + '%(message)s'
+        telformat= '[%(asctime)%] %(message)s'
         telformatter = logging.Formatter(telformat)
         telegram_handler = LogTelHandler()
         telegram_handler.setFormatter(telformatter)
@@ -71,11 +72,12 @@ class LogTelHandler(logging.Handler):
         self.chatid = keyManager.getJsonData("telegram_chatid")
     
     def emit(self, record):
-        if self.formatter is None: 
-            text = record.msg
-        else:
-            text = self.formatter.format(record)
-            
+        # if self.formatter is None: 
+        #     text = record.msg
+        # else:
+        #     text = self.formatter.format(record)
+        text = datetime.now().strftime("[%m/%d %H:%M:%S.%f] ") + record.msg
+
         try:
             self.telbot.sendMessage(chat_id=self.chatid, text=text)
         except Exception as e:

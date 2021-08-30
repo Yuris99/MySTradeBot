@@ -1,4 +1,5 @@
 import sys
+import os
 
 from PyQt5.QAxContainer import *
 from PyQt5.QtCore import QEventLoop
@@ -140,31 +141,32 @@ class Kiwoom(QAxWidget):
                     self.logger.info("장 마감 " + remained_time[2:4] + "분전 입니다")
                 else:
                     self.logger.info("곧 장이 마감됩니다"
-                                    +"\n장 마감까지 남은시간" + remained_time[4:6] + "초전")
+                                    +"\n장 마감까지 남은시간 " + remained_time[4:6] + "초전")
             elif market_gubun == '4':
                 self.logger.info("장이 마감되었습니다")
                 self.logger.info("프로그램을 종료합니다")
-                sys.exit(1)
+                #sys.exit()
+                os._exit(0)
             else:
                 self.logger.debug("장 구분: " + market_gubun)
             return
 
         if sRealType == '주식체결':
             currprice = abs(int(self.get_comm_real_data(sCode, "10")))
-            if sCode not in self.stock_info['종목정보']:
-                self.stock_info['종목정보'].update({sCode:{}})
-            self.stock_info['종목정보'][sCode]['현재가'] = currprice
+            if sCode not in self.stock_info:
+                self.stock_info.update({sCode:{}})
+            self.stock_info[sCode]['현재가'] = currprice
 
-            if '매도중' in self.stock_info['종목정보'][sCode] and not self.stock_info['종목정보'][sCode]['매도중']:
-                if currprice >= self.stock_info['종목정보'][sCode]['목표가']:
+            if '매도중' in self.stock_info[sCode] and not self.stock_info[sCode]['매도중']:
+                if currprice >= self.stock_info[sCode]['목표가']:
                     self.logger.info("\n매도 종목 발생 : " + sCode)
                     #self.notify_callback('OnReceiveRealData', sRealData, "매도")
-                    self.stock_info['종목정보'][sCode]['매도중'] = True
-                    self.sell_marketPrice(sCode, int(self.stock_info['종목정보'][sCode]['주문가능수량']))
+                    self.stock_info[sCode]['매도중'] = True
+                    self.sell_marketPrice(sCode, int(self.stock_info[sCode]['주문가능수량']))
                     self.set_real_remove(self.screen_real_monitor, sCode)
                     self.logger.info("\n실시간 모니터링을 종료합니다"
                                     +"\n종목코드 : " + sCode
-                                    +"\n종목명 : " + self.stock_info['종목정보'][sCode]['종목명'])
+                                    +"\n종목명 : " + self.stock_info[sCode]['종목명'])
 
     
 
@@ -245,9 +247,9 @@ class Kiwoom(QAxWidget):
         self.event_loop.exec_()
 
         #log Balance
-        if self.stock_info['종목정보']:
+        if self.stock_info:
             self.logger.info("미매도 종목")
-            for code, data in self.stock_info['종목정보'].items():
+            for code, data in self.stock_info.items():
                 self.logger.info( "\n종목코드: " + code
                                 + "\n종목명: " + data["종목명"]
                                 + "\n수익률: " + str(data["수익률(%)"]) + "%"
